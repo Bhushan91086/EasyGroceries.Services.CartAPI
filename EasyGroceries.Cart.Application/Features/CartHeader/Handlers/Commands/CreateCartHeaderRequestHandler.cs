@@ -10,6 +10,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using EasyGroceries.Cart.Domain;
+using EasyGroceries.Cart.Application.Validators;
+using System.Net;
 
 namespace EasyGroceries.Cart.Application.Features.CartHeader.Handlers.Commands
 {
@@ -26,7 +28,18 @@ namespace EasyGroceries.Cart.Application.Features.CartHeader.Handlers.Commands
 
         public async Task<ResponseDto<CartHeaderDto>> Handle(CreateCartHeaderRequest request, CancellationToken cancellationToken)
         {
+            var validator = new CartHeaderDtoValidator();
+            var validationResult = await validator.ValidateAsync(request.CartHeaderDto);
             var response = new ResponseDto<CartHeaderDto>();
+
+            if (!validationResult.IsValid)
+            {
+                response.IsSuccess = false;
+                response.Status = (int)HttpStatusCode.BadRequest;
+                response.Message = "Validation failed";
+                return response;
+            }
+
             var cartHeader = _mapper.Map<EasyGroceries.Cart.Domain.CartHeader>(request.CartHeaderDto);
             await _cartHeaderRepository.Add(cartHeader);
             response.Message = "CartHeader Creation Successful";

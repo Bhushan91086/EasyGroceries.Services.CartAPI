@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reflection.PortableExecutable;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -36,10 +37,18 @@ namespace EasyGroceries.Cart.Application.Services
                 if (cartHeaderFromDb == null)
                 {
                     //create header and details
-                    CartHeaderDto cartHeader = _mediator.Send(
-                        new CreateCartHeaderRequest() { CartHeaderDto = cartDto.CartHeader }).Result.Result;
-                    cartDto.CartDetails.First().CartHeaderId = cartHeader.CartHeaderId;
-                    await _mediator.Send(new CreateCartDetailsRequest() { CartDetailsDto = cartDto.CartDetails.First() });
+                    var result = _mediator.Send(
+                        new CreateCartHeaderRequest() { CartHeaderDto = cartDto.CartHeader }).Result;
+                    if (!result.IsSuccess)
+                    {
+                        response.Status = result.Status;
+                        response.Message = response.Message;
+                        response.IsSuccess = result.IsSuccess;
+                        return response;
+                    }
+
+                    cartDto.CartDetails.First().CartHeaderId = result.Result.CartHeaderId;
+                    response.IsSuccess = await _mediator.Send(new CreateCartDetailsRequest() { CartDetailsDto = cartDto.CartDetails.First() });
                 }
                 else
                 {
@@ -64,7 +73,8 @@ namespace EasyGroceries.Cart.Application.Services
                     }
                 }
 
-                response.Result = cartDto;
+                if (response.IsSuccess)
+                    response.Result = cartDto;
             }
             catch (Exception ex)
             {

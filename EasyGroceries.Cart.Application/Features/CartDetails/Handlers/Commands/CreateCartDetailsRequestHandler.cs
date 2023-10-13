@@ -2,6 +2,7 @@
 using EasyGroceries.Cart.Application.Contracts.Infrastructure;
 using EasyGroceries.Cart.Application.DTOs;
 using EasyGroceries.Cart.Application.Features.CartDetails.Requests.Commands;
+using EasyGroceries.Cart.Application.Validators;
 using MediatR;
 using System;
 using System.Collections.Generic;
@@ -24,13 +25,23 @@ namespace EasyGroceries.Cart.Application.Features.CartDetails.Handlers.Commands
 
         public async Task<bool> Handle(CreateCartDetailsRequest request, CancellationToken cancellationToken)
         {
-            //var response = new ResponseDto<CartDetailsDto>();
-            var cartDetails = _mapper.Map<Domain.CartDetails>(request.CartDetailsDto);
-            await _cartDetailsRepository.AddCartDetails(cartDetails);
-            return true;
-            //response.Message = "CartDetails Creation Successful";
-            //response.Result = request.CartDetailsDto;
-            //return response;
+            try
+            {
+                var validator = new CartDetailsDtoValidator();
+                var validationResult = await validator.ValidateAsync(request.CartDetailsDto);
+                if (!validationResult.IsValid)
+                {
+                    return false;
+                }
+
+                var cartDetails = _mapper.Map<Domain.CartDetails>(request.CartDetailsDto);
+                await _cartDetailsRepository.AddCartDetails(cartDetails);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

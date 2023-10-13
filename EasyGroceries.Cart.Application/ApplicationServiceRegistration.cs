@@ -9,6 +9,8 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
+using FluentValidation;
+using EasyGroceries.Cart.Application.Validators;
 
 namespace EasyGroceries.Cart.Application
 {
@@ -21,6 +23,7 @@ namespace EasyGroceries.Cart.Application
             services.AddMediatR(Assembly.GetExecutingAssembly());
             services.AddScoped<IProductService, ProductService>();
             services.AddScoped<ICartService, CartService>();
+            services.AddValidatorsFromAssemblyContaining<CartDtoValidator>();
             return services;
         }
     } 
