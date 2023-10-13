@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace EasyGroceries.Cart.Application.Features.CartDetails.Handlers.Queries
 {
-    public class GetCartDetailsRequestHandler : IRequestHandler<GetCartDetailsRequest, IEnumerable<CartDetailsDto>>
+    public class GetCartDetailsRequestHandler : IRequestHandler<GetCartDetailsRequest, List<CartDetailsDto>>
     {
         private readonly ICartDetailsRepository _cartDetailsRepository;
         private readonly IMapper _mapper;
@@ -22,7 +22,7 @@ namespace EasyGroceries.Cart.Application.Features.CartDetails.Handlers.Queries
             _mapper = mapper;
         }
 
-        public async Task<IEnumerable<CartDetailsDto>> Handle(GetCartDetailsRequest request, CancellationToken cancellationToken)
+        public async Task<List<CartDetailsDto>> Handle(GetCartDetailsRequest request, CancellationToken cancellationToken)
         {
             var cartDetailsList = await _cartDetailsRepository.GetAllCartDetails();
             return _mapper.Map<List<CartDetailsDto>>(cartDetailsList);

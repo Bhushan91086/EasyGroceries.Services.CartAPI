@@ -11,7 +11,7 @@ namespace EasyGroceries.Cart.Application.Contracts.Infrastructure
     {
         Task<IReadOnlyList<CartHeader>> GetAll();
         Task<CartHeader> GetCartHeaderByUserId(int userId);
-        Task<CartHeader> Add(CartHeader cartHeader);
+        Task Add(CartHeader cartHeader);
         Task Update(CartHeader cartHeader);
         Task Delete(CartHeader cartHeader);
     }

@@ -9,7 +9,7 @@ namespace EasyGroceries.Cart.Application.DTOs
     public class CartHeaderDto
     {
         public int CartHeaderId { get; set; }
-        public string? UserId { get; set; }
+        public int UserId { get; set; }
         public bool LoyaltyMembershipOpted { get; set; }
         public double CartTotal { get; set; }
     }

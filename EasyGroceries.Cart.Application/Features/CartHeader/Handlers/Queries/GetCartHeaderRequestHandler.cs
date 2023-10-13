@@ -24,7 +24,7 @@ namespace EasyGroceries.Cart.Application.Features.CartHeader.Handlers.Queries
 
         public async Task<CartHeaderDto> Handle(GetCartHeaderRequest request, CancellationToken cancellationToken)
         {
-            var cartHeader = await _cartHeaderRepository.GetCartHeaderByUserId(request.Id);
+            var cartHeader = await _cartHeaderRepository.GetCartHeaderByUserId(request.UserId);
             return _mapper.Map<CartHeaderDto>(cartHeader);
         }
     }

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace EasyGroceries.Cart.Application.Features.CartDetails.Requests.Commands
 {
-    public class CreateCartDetailsRequest : IRequest<bool>
+    public class UpdateCartDetailsRequest : IRequest<bool>
     {
         public CartDetailsDto CartDetailsDto { get; set; }
     }

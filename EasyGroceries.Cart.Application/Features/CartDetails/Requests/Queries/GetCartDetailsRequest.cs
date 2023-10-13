@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace EasyGroceries.Cart.Application.Features.CartDetails.Requests.Queries
 {
-    public class GetCartDetailsRequest : IRequest<IEnumerable<CartDetailsDto>>
+    public class GetCartDetailsRequest : IRequest<List<CartDetailsDto>>
     {
     }
 }

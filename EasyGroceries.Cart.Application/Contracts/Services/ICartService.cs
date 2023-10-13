@@ -10,5 +10,6 @@ namespace EasyGroceries.Cart.Application.Contracts.Services
     public interface ICartService
     {
         Task<ResponseDto<CartDto>> CartUpsert(CartDto cartDto);
+        Task<ResponseDto<CartDto>> GetCart(int userId);
     }
 }

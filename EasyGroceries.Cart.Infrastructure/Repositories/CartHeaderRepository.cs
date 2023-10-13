@@ -10,9 +10,15 @@ namespace EasyGroceries.Cart.Infrastructure.Repositories
 {
     public class CartHeaderRepository : ICartHeaderRepository
     {
-        public Task<CartHeader> Add(CartHeader cartHeader)
+        private static List<CartHeader> cartHeaderLst = new List<CartHeader>
         {
-            throw new NotImplementedException();
+            new CartHeader(){ CartHeaderId = 101, UserId = 1234, CartTotal = 20, LoyaltyMembershipOpted = true},
+            new CartHeader(){ CartHeaderId = 103, UserId = 5678, CartTotal = 50, LoyaltyMembershipOpted = false}
+        };
+
+        public async Task Add(CartHeader cartHeader)
+        {
+            cartHeaderLst.Add(cartHeader);
         }
 
         public Task Delete(CartHeader cartHeader)
@@ -25,9 +31,9 @@ namespace EasyGroceries.Cart.Infrastructure.Repositories
             throw new NotImplementedException();
         }
 
-        public Task<CartHeader> GetCartHeaderByUserId(int userId)
+        public async Task<CartHeader> GetCartHeaderByUserId(int userId)
         {
-            throw new NotImplementedException();
+            return cartHeaderLst.FirstOrDefault(x => x.UserId == userId);
         }
 
         public Task Update(CartHeader cartHeader)

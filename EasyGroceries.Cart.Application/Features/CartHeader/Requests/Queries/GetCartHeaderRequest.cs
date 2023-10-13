@@ -10,6 +10,6 @@ namespace EasyGroceries.Cart.Application.Features.CartHeader.Requests.Queries
 {
     public class GetCartHeaderRequest : IRequest<CartHeaderDto>
     {
-        public int Id { get; set; }
+        public int UserId { get; set; }
     }
 }

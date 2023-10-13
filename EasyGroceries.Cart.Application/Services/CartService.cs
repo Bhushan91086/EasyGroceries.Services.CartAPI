@@ -1,10 +1,16 @@
-﻿using EasyGroceries.Cart.Application.Contracts.Services;
+﻿using AutoMapper;
+using EasyGroceries.Cart.Application.Contracts.Services;
 using EasyGroceries.Cart.Application.DTOs;
+using EasyGroceries.Cart.Application.Features.CartDetails.Requests.Commands;
+using EasyGroceries.Cart.Application.Features.CartDetails.Requests.Queries;
+using EasyGroceries.Cart.Application.Features.CartHeader.Requests.Commands;
+using EasyGroceries.Cart.Application.Features.CartHeader.Requests.Queries;
 using EasyGroceries.Cart.Domain;
 using MediatR;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -13,67 +19,99 @@ namespace EasyGroceries.Cart.Application.Services
     public class CartService : ICartService
     {
         private readonly IMediator _mediator;
+        private readonly IProductService _productService;
 
-        public CartService()
+        public CartService(IMediator mediator, IProductService productService)
         {
-            
+            _mediator = mediator;
+            _productService = productService;
         }
 
-        Task<ResponseDto<CartDto>> ICartService.CartUpsert(CartDto cartDto)
+        public async Task<ResponseDto<CartDto>> CartUpsert(CartDto cartDto)
         {
-            throw new NotImplementedException();
-        }
-
-
-        [HttpPost("CartUpsert")]
-        public async Task<ResponseDto> CartUpsert(CartDto cartDto)
-        {
+            ResponseDto<CartDto> response = new ResponseDto<CartDto>();
             try
             {
-                var cartHeaderFromDb = await _db.CartHeaders.AsNoTracking()
-                    .FirstOrDefaultAsync(u => u.UserId == cartDto.CartHeader.UserId);
+                var cartHeaderFromDb = _mediator.Send(new GetCartHeaderRequest() { UserId = cartDto.CartHeader.UserId }).Result;
                 if (cartHeaderFromDb == null)
                 {
                     //create header and details
-                    CartHeader cartHeader = _mapper.Map<CartHeader>(cartDto.CartHeader);
-                    _db.CartHeaders.Add(cartHeader);
-                    await _db.SaveChangesAsync();
+                    CartHeaderDto cartHeader = _mediator.Send(
+                        new CreateCartHeaderRequest() { CartHeaderDto = cartDto.CartHeader }).Result.Result;
                     cartDto.CartDetails.First().CartHeaderId = cartHeader.CartHeaderId;
-                    _db.CartDetails.Add(_mapper.Map<CartDetails>(cartDto.CartDetails.First()));
-                    await _db.SaveChangesAsync();
+                    await _mediator.Send(new CreateCartDetailsRequest() { CartDetailsDto = cartDto.CartDetails.First() });
                 }
                 else
                 {
                     //if header is not null
                     //check if details has same product
-                    var cartDetailsFromDb = await _db.CartDetails.AsNoTracking().FirstOrDefaultAsync(
-                        u => u.ProductId == cartDto.CartDetails.First().ProductId &&
-                        u.CartHeaderId == cartHeaderFromDb.CartHeaderId);
-                    if (cartDetailsFromDb == null)
+                    var cartDetailsList = await _mediator.Send(new GetCartDetailsRequest());
+                    var cartDetailsOfProduct = cartDetailsList.FirstOrDefault(x => x.CartHeaderId == cartHeaderFromDb.CartHeaderId
+                                                                && x.ProductId == cartDto.CartDetails.First().ProductId);
+                    if (cartDetailsOfProduct == null)
                     {
                         //create cartdetails
                         cartDto.CartDetails.First().CartHeaderId = cartHeaderFromDb.CartHeaderId;
-                        _db.CartDetails.Add(_mapper.Map<CartDetails>(cartDto.CartDetails.First()));
-                        await _db.SaveChangesAsync();
+                        response.IsSuccess = await _mediator.Send(new CreateCartDetailsRequest() { CartDetailsDto = cartDto.CartDetails.First() });
                     }
                     else
                     {
                         //update count in cart details
-                        cartDto.CartDetails.First().Count += cartDetailsFromDb.Count;
-                        cartDto.CartDetails.First().CartHeaderId = cartDetailsFromDb.CartHeaderId;
-                        cartDto.CartDetails.First().CartDetailsId = cartDetailsFromDb.CartDetailsId;
-                        _db.CartDetails.Update(_mapper.Map<CartDetails>(cartDto.CartDetails.First()));
-                        await _db.SaveChangesAsync();
+                        cartDto.CartDetails.First().Count += cartDetailsOfProduct.Count;
+                        cartDto.CartDetails.First().CartHeaderId = cartDetailsOfProduct.CartHeaderId;
+                        cartDto.CartDetails.First().CartDetailsId = cartDetailsOfProduct.CartDetailsId;
+                        response.IsSuccess = await _mediator.Send(new UpdateCartDetailsRequest() { CartDetailsDto = cartDto.CartDetails.First() });
                     }
                 }
-                _response.Result = cartDto;
+
+                response.Result = cartDto;
             }
             catch (Exception ex)
             {
-                _response.Message = ex.Message.ToString();
-                _response.IsSuccess = false;
+                response.Message = ex.Message.ToString();
+                response.IsSuccess = false;
             }
-            return _response;
+
+            return response;
         }
+
+        public async Task<ResponseDto<CartDto>> GetCart(int userId)
+        {
+            ResponseDto<CartDto> response = new ResponseDto<CartDto>();
+
+            try
+            {
+                CartDto cart = new CartDto
+                {
+                    CartHeader = await _mediator.Send(new GetCartHeaderRequest() { UserId = userId })
+                };
+
+                List<CartDetailsDto> allCartDetails = await _mediator.Send(new GetCartDetailsRequest());
+                cart.CartDetails = allCartDetails.Where(x => x.CartHeaderId == cart.CartHeader.CartHeaderId);
+                if (cart.CartDetails != null && cart.CartDetails.Count() > 0)
+                {
+                    // Retrive all the products from Product Service
+                    IEnumerable<ProductDto> products = await _productService.GetProducts();
+
+                    foreach (var cartDetail in cart.CartDetails)
+                    {
+                        cartDetail.Product = products.FirstOrDefault(x => x.ProductId == cartDetail.ProductId);
+                        cart.CartHeader.CartTotal += (cartDetail.Count * cartDetail.Product.Price);
+                    }
+                }
+
+                response.Result = cart;
+                response.Status = (int)HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                response.IsSuccess = false;
+                response.Message = ex.Message;
+                response.Status = (int)HttpStatusCode.InternalServerError;
+            }
+
+            return response;
+        }
+
     }
 }
