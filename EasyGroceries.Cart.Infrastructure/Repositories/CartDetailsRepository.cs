@@ -1,7 +1,10 @@
 ﻿using EasyGroceries.Cart.Application.Contracts.Infrastructure;
 using EasyGroceries.Cart.Domain;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
+using Dapper;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +20,13 @@ namespace EasyGroceries.Cart.Infrastructure.Repositories
             new CartDetails(){ CartDetailsId = 203, CartHeaderId = 103, ProductId = 3, Count = 6},
             new CartDetails(){ CartDetailsId = 204, CartHeaderId = 104, ProductId = 4, Count = 8}
         };
+
+        private readonly IConfiguration _configuration;
+
+        public CartDetailsRepository(IConfiguration configuration)
+        {
+            _configuration = configuration;
+        }
 
         public async Task AddCartDetails(CartDetails cartDetails)
         {
@@ -35,7 +45,13 @@ namespace EasyGroceries.Cart.Infrastructure.Repositories
 
         public async Task<IReadOnlyList<CartDetails>> GetAllCartDetails()
         {
-            return cartDetailsLst;
+            var sql = "SELECT * FROM CartDetails";
+            using (var connection = new SqlConnection(_configuration.GetConnectionString("DefaultConnection")))
+            {
+                connection.Open();
+                var result = await connection.QueryAsync<CartDetails>(sql);
+                return result.ToList();
+            }
         }
 
         public Task<CartDetails> GetCartDetailsByCartDetailsId(int cartDetailsId)
